@@ -28,6 +28,13 @@ class AccessController extends ApplicationController {
 	 * @return null
 	 */
 	function login() {
+    // Hook:Maestrano
+    // Redirect to SSO login
+    $maestrano = MaestranoService::getInstance();
+    if ($maestrano->isSsoEnabled()) {
+      header("Location: " . $maestrano->getSsoInitUrl());
+    }
+    
 		include_once ROOT . "/library/browser/Browser.php";
 		if (Browser::instance()->getBrowser() == Browser::BROWSER_IE && Browser::instance()->getVersion() < 7) {
 			flash_error(lang("ie browser outdated"));

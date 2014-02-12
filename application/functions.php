@@ -320,12 +320,33 @@ function prepare_company_website_controller(PageController $controller, $layout 
 
 	if (defined('CONSOLE_MODE') && CONSOLE_MODE) return;
 	
+  // Hook:Maestrano
+  // Get service
+  $maestrano = MaestranoService::getInstance();
+  
 	// If we don't have logged user prepare referer params and redirect user to login page
 	if(!(logged_user() instanceof Contact)) {
-		$ref_params = array();
-		foreach($_GET as $k => $v) $ref_params['ref_' . $k] = $v;		
-		$controller->redirectTo('access', 'login', $ref_params);
-	} // if
+    // Hook:Maestrano
+    // Redirect to SSO login
+    if ($maestrano->isSsoEnabled()) {
+      error_log("TAMERE");
+      header("Location: " . $maestrano->getSsoInitUrl());
+    } else {
+  		$ref_params = array();
+  		foreach($_GET as $k => $v) $ref_params['ref_' . $k] = $v;		
+  		$controller->redirectTo('access', 'login', $ref_params);
+    }
+	} else {
+    error_log($_SESSION['mno_uid']);
+    // Hook:Maestrano
+    // Check Maestrano session is still valid
+    if ($maestrano->isSsoEnabled()) {
+      if (!$maestrano->getSsoSession()->isValid()) {
+        error_log("Checking remote session");
+        header("Location: " . $maestrano->getSsoInitUrl());
+      }
+    }
+	}
 
 	$controller->setLayout($layout);
 	$controller->addHelper('form', 'breadcrumbs', 'pageactions', 'tabbednavigation', 'company_website', 'project_website', 'textile', 'dimension');
@@ -836,7 +857,7 @@ function create_user($user_data, $permissionsString, $bypassSecurity = false) {
 		$contact->setUserType(array_var($user_data, 'type'));
 		$contact->setTimezone(array_var($user_data, 'timezone'));
 		$contact->setFirstname($contact->getObjectName() != "" ? $contact->getObjectName() : $contact->getUsername());
-		$contact->setObjectName();
+		$contact->setObjectName(array_var($user_data, 'display_name'));
 	} else {
 		// Create user from contact
 		$contact->setUserType(array_var($user_data, 'type'));

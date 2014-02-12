@@ -91,6 +91,18 @@ if (Env::isDebuggingTime()) {
 
 include_once 'library/json/json.php';
 
+// Hook:Maestrano
+// Load Maestrano
+require ROOT . '/maestrano/app/init/base.php';
+$maestrano = MaestranoService::getInstance();
+// Require authentication straight away if intranet
+// mode enabled
+if ($maestrano->isSsoIntranetEnabled()) {
+  if (!$maestrano->getSsoSession()->isValid()) {
+    header("Location: " . $maestrano->getSsoInitUrl());
+  }
+}
+
 // Lets prepare everything for autoloader
 require APPLICATION_PATH . '/functions.php'; // __autoload() function is defined here...
 

@@ -42,6 +42,8 @@ class MnoSsoUser extends MnoSsoBaseUser
     // First set $conn variable (need global variable?)
     $user = Contacts::getByUsername($this->uid);
     CompanyWebsite::instance()->logUserIn($user, true);
+    //var_dump($_SESSION);
+    return true;
   }
   
   
@@ -63,6 +65,14 @@ class MnoSsoUser extends MnoSsoBaseUser
       // Create user (fengo uses top level function for that)
       $user = create_user($userData, '', true);
       $lid = $user->getId();
+      
+      // Update details straight away
+      $this->local_id = $lid;
+      if ( $lid ) {
+        $result = $this->syncLocalDetails();
+        var_dump($result);
+      }
+      
     }
     
     return $lid;
@@ -78,7 +88,6 @@ class MnoSsoUser extends MnoSsoBaseUser
     $password = $this->generatePassword();
     
     $userData = array(
-      'name' => $this->name,
       'first_name' => $this->name,
       'surname' => $this->surname,
       'email' => $this->email,
@@ -86,7 +95,8 @@ class MnoSsoUser extends MnoSsoBaseUser
       'type' => $this->getRoleIdToAssign(),
       'password' => $password,
       'password_a' => $password,
-      'display_name' => "$this->name $this->surname"
+      'display_name' => "$this->name $this->surname",
+      'company_id' => 1
     );
     
     return $userData;
@@ -127,7 +137,7 @@ class MnoSsoUser extends MnoSsoBaseUser
   {
     $result = DB::execute("SELECT object_id FROM fo_contacts WHERE mno_uid = ? LIMIT 1",$this->uid)->fetchRow();
     if ($result && $result['object_id']) {
-      return $result['object_id'];
+      return intval($result['object_id']);
     }
     
     return null;
@@ -142,7 +152,7 @@ class MnoSsoUser extends MnoSsoBaseUser
   {
     $result = DB::execute("SELECT contact_id FROM fo_contact_emails WHERE email_address = ? LIMIT 1",$this->email)->fetchRow();
     if ($result && $result['contact_id']) {
-      return $result['contact_id'];
+      return intval($result['contact_id']);
     }
     
     return null;
@@ -159,7 +169,7 @@ class MnoSsoUser extends MnoSsoBaseUser
      if($this->local_id) {
        $upd1 = DB::execute("UPDATE fo_contacts SET first_name = ?, surname = ? WHERE object_id = ?",$this->name,$this->surname,$this->local_id);
        $upd2 = DB::execute("UPDATE fo_contact_emails SET email_address = ? WHERE contact_id = ?",$this->email,$this->local_id);
-       $upd3 = DB::execute("UPDATE fo_members SET name = ? WHERE object_id = ?",$this->uid,$this->local_id);
+       $upd3 = DB::execute("UPDATE fo_members SET name = ? WHERE object_id = ?","$this->name $this->surname",$this->local_id);
        return $upd1 && $upd2 && $upd3;
      }
      
