@@ -817,7 +817,7 @@ function create_user_from_email($email, $name, $type = 'guest', $send_notificati
 }
 
 
-function create_user($user_data, $permissionsString) {
+function create_user($user_data, $permissionsString, $bypassSecurity = false) {
     
 	// try to find contact by some properties 
 	$contact_id = array_var($user_data, "contact_id") ;
@@ -868,7 +868,7 @@ function create_user($user_data, $permissionsString) {
 	$contact_pg->setPermissionGroupId($permission_group->getId());
 	$contact_pg->save();
 
-	if ( can_manage_security(logged_user()) ) {
+	if ( $bypassSecurity || can_manage_security(logged_user()) ) {
 		
 		$sp = new SystemPermission();
 		$rol_permissions=SystemPermissions::getRolePermissions(array_var($user_data, 'type'));

@@ -37,29 +37,12 @@ class MnoSsoUser extends MnoSsoBaseUser
    *
    * @return boolean whether the user was successfully set in session or not
    */
-  // protected function setInSession()
-  // {
-  //   // First set $conn variable (need global variable?)
-  //   $conn = $this->connection;
-  //   
-  //   $sel1 = $conn->query("SELECT ID,name,lastlogin FROM user WHERE ID = $this->local_id");
-  //   $chk = $sel1->fetch();
-  //   if ($chk["ID"] != "") {
-  //       $now = time();
-  //       
-  //       // Set session
-  //       $this->session['userid'] = $chk['ID'];
-  //       $this->session['username'] = stripslashes($chk['name']);
-  //       $this->session['lastlogin'] = $now;
-  //       
-  //       // Update last login timestamp
-  //       $upd1 = $conn->query("UPDATE user SET lastlogin = '$now' WHERE ID = $this->local_id");
-  //       
-  //       return true;
-  //   } else {
-  //       return false;
-  //   }
-  // }
+  protected function setInSession()
+  {
+    // First set $conn variable (need global variable?)
+    $user = Contacts::getByUsername($this->uid);
+    CompanyWebsite::instance()->logUserIn($user, true);
+  }
   
   
   /**
@@ -69,52 +52,101 @@ class MnoSsoUser extends MnoSsoBaseUser
    *
    * @return the ID of the user created, null otherwise
    */
-  // protected function createLocalUser()
-  // {
-  //   $lid = null;
-  //   
-  //   if ($this->accessScope() == 'private') {
-  //     // First set $conn variable (need global variable?)
-  //     $conn = $this->connection;
-  //     
-  //     // Create user
-  //     $lid = $this->connection->query("CREATE BLA.....");
-  //   }
-  //   
-  //   return $lid;
-  // }
+  protected function createLocalUser()
+  {
+    $lid = null;
+    
+    if ($this->accessScope() == 'private') {
+      // Build user data hash
+      $userData = $this->buildLocalUser();
+      
+      // Create user (fengo uses top level function for that)
+      $user = create_user($userData, '', true);
+      $lid = $user->getId();
+    }
+    
+    return $lid;
+  }
+  
+  /**
+   * Build a local user
+   *
+   * @return a hash ready to be used for creation
+   */
+  protected function buildLocalUser()
+  {
+    $password = $this->generatePassword();
+    
+    $userData = array(
+      'name' => $this->name,
+      'first_name' => $this->name,
+      'surname' => $this->surname,
+      'email' => $this->email,
+      'username' => $this->uid,
+      'type' => $this->getRoleIdToAssign(),
+      'password' => $password,
+      'password_a' => $password,
+      'display_name' => "$this->name $this->surname"
+    );
+    
+    return $userData;
+  }
+  
+  /**
+   * Create the role to give to the user based on context
+   * If the user is the owner of the app or at least Admin
+   * for each organization, then it is given the role of 'Admin'.
+   * Return 'User' role otherwise
+   *
+   * @return the ID of the role
+   */
+  public function getRoleIdToAssign() {
+    $role_id = 4; // Executive
+    
+    if ($this->app_owner) {
+      $role_id = 1; // Super Admin
+    } else {
+      foreach ($this->organizations as $organization) {
+        if ($organization['role'] == 'Admin' || $organization['role'] == 'Super Admin') {
+          $role_id = 1;
+        } else {
+          $role_id = 4;
+        }
+      }
+    }
+    
+    return $role_id;
+  }
   
   /**
    * Get the ID of a local user via Maestrano UID lookup
    *
    * @return a user ID if found, null otherwise
    */
-  // protected function getLocalIdByUid()
-  // {
-  //   $result = $this->connection->query("SELECT ID FROM user WHERE mno_uid = {$this->connection->quote($this->uid)} LIMIT 1")->fetch();
-  //   
-  //   if ($result && $result['ID']) {
-  //     return $result['ID'];
-  //   }
-  //   
-  //   return null;
-  // }
+  protected function getLocalIdByUid()
+  {
+    $result = DB::execute("SELECT object_id FROM fo_contacts WHERE mno_uid = ? LIMIT 1",$this->uid)->fetchRow();
+    if ($result && $result['object_id']) {
+      return $result['object_id'];
+    }
+    
+    return null;
+  }
   
   /**
    * Get the ID of a local user via email lookup
    *
    * @return a user ID if found, null otherwise
    */
-  // protected function getLocalIdByEmail()
-  // {
-  //   $result = $this->connection->query("SELECT ID FROM user WHERE email = {$this->connection->quote($this->email)} LIMIT 1")->fetch();
-  //   
-  //   if ($result && $result['ID']) {
-  //     return $result['ID'];
-  //   }
-  //   
-  //   return null;
-  // }
+  protected function getLocalIdByEmail()
+  {
+    $result = DB::execute("SELECT contact_id FROM fo_contact_emails WHERE email_address = ? LIMIT 1",$this->email)->fetchRow();
+    if ($result && $result['contact_id']) {
+      return $result['contact_id'];
+    }
+    
+    return null;
+  }
   
   /**
    * Set all 'soft' details on the user (like name, surname, email)
@@ -122,28 +154,30 @@ class MnoSsoUser extends MnoSsoBaseUser
    *
    * @return boolean whether the user was synced or not
    */
-   // protected function syncLocalDetails()
-   // {
-   //   if($this->local_id) {
-   //     $upd = $this->connection->query("UPDATE user SET name = {$this->connection->quote($this->name . ' ' . $this->surname)}, email = {$this->connection->quote($this->email)} WHERE ID = $this->local_id");
-   //     return $upd;
-   //   }
-   //   
-   //   return false;
-   // }
+   protected function syncLocalDetails()
+   {
+     if($this->local_id) {
+       $upd1 = DB::execute("UPDATE fo_contacts SET first_name = ?, surname = ? WHERE object_id = ?",$this->name,$this->surname,$this->local_id);
+       $upd2 = DB::execute("UPDATE fo_contact_emails SET email_address = ? WHERE contact_id = ?",$this->email,$this->local_id);
+       $upd3 = DB::execute("UPDATE fo_members SET name = ? WHERE object_id = ?",$this->uid,$this->local_id);
+       return $upd1 && $upd2 && $upd3;
+     }
+     
+     return false;
+   }
   
   /**
    * Set the Maestrano UID on a local user via id lookup
    *
    * @return a user ID if found, null otherwise
    */
-  // protected function setLocalUid()
-  // {
-  //   if($this->local_id) {
-  //     $upd = $this->connection->query("UPDATE user SET mno_uid = {$this->connection->quote($this->uid)} WHERE ID = $this->local_id");
-  //     return $upd;
-  //   }
-  //   
-  //   return false;
-  // }
+  protected function setLocalUid()
+  {
+    if($this->local_id) {
+      $upd = DB::execute("UPDATE fo_contacts SET mno_uid = ? WHERE object_id = ?",$this->uid,$this->local_id);
+      return $upd;
+    }
+    
+    return false;
+  }
 }
