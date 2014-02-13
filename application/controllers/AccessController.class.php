@@ -433,7 +433,16 @@ class AccessController extends ApplicationController {
 	function logout() {
 		ApplicationLogs::createLog(logged_user(),ApplicationLogs::ACTION_LOGOUT,false,false,true,get_ip_address());
 		CompanyWebsite::instance()->logUserOut();
-		$this->redirectTo('access', 'login');
+		
+    // Hook:Maestrano
+    $maestrano = MaestranoService::getInstance();
+    if ($maestrano->isSsoEnabled()) {
+      header("Location: " . $maestrano->getSsoLogoutUrl());
+      exit();
+    } else {
+      $this->redirectTo('access', 'login');
+    }
+    
 	} // logout
 
 	/**

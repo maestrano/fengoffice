@@ -329,7 +329,6 @@ function prepare_company_website_controller(PageController $controller, $layout 
     // Hook:Maestrano
     // Redirect to SSO login
     if ($maestrano->isSsoEnabled()) {
-      error_log("TAMERE");
       header("Location: " . $maestrano->getSsoInitUrl());
     } else {
   		$ref_params = array();
@@ -337,12 +336,10 @@ function prepare_company_website_controller(PageController $controller, $layout 
   		$controller->redirectTo('access', 'login', $ref_params);
     }
 	} else {
-    error_log($_SESSION['mno_uid']);
     // Hook:Maestrano
     // Check Maestrano session is still valid
     if ($maestrano->isSsoEnabled()) {
       if (!$maestrano->getSsoSession()->isValid()) {
-        error_log("Checking remote session");
         header("Location: " . $maestrano->getSsoInitUrl());
       }
     }
