@@ -1,18 +1,18 @@
 <?php
+
 //-----------------------------------------------
 // Define root folder and load base
 //-----------------------------------------------
+
 if (!defined('MAESTRANO_ROOT')) {
   define("MAESTRANO_ROOT", realpath(dirname(__FILE__) . '/../../'));
 }
-require_once MAESTRANO_ROOT . '/app/init/base.php';
 
 //-----------------------------------------------
 // Require your app specific files here
 //-----------------------------------------------
 define('APP_DIR', realpath(MAESTRANO_ROOT . '/../'));
 chdir(APP_DIR);
-
 
 // ===================================================
 //  Feng Office Boot script
@@ -106,7 +106,7 @@ if (Env::isDebuggingTime()) {
 include_once 'library/json/json.php';
 
 // Lets prepare everything for autoloader
-require APPLICATION_PATH . '/functions.php'; // __autoload() function is defined here...
+require_once APPLICATION_PATH . '/functions.php'; // __autoload() function is defined here...
 
 if (!$callbacks = spl_autoload_functions()) $callbacks = array();
 foreach ($callbacks as $callback) {
@@ -116,7 +116,6 @@ spl_autoload_register('feng__autoload');
 foreach ($callbacks as $callback) {
 	spl_autoload_register($callback);
 }
-
 
 @include_once CACHE_DIR . '/autoloader.php';
 
@@ -184,7 +183,5 @@ if(Env::isDebugging()) {
 // automatically be passed to the MnoSsoUser object
 // for construction
 // e.g:
-$opts = array();
-$opts['db_connection'] = DB;
 
-
+?>

@@ -6,6 +6,6 @@
   if(!defined('PUBLIC_FOLDER')) {
     define('PUBLIC_FOLDER', 'public'); // this file can be included through public/index.php
   } // if
-  require 'init.php';
+  require_once 'init.php';
   
 ?>

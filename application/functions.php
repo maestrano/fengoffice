@@ -68,6 +68,11 @@ function feng__autoload($load_class_name) {
  * @return null
  */
 function __shutdown() {
+	$fn_call = "maestrano_process_updates";
+    if (function_exists($fn_call)) {
+		$fn_call();
+    }
+
 	DB::close();
 	$logger_session = Logger::getSession();
 	if(($logger_session instanceof Logger_Session) && !$logger_session->isEmpty()) {

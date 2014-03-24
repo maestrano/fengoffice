@@ -17,6 +17,13 @@
   */
   abstract class DataObject {
     
+    /**
+     * Indicates if this object should be sent to Maestrano integration service
+     * 
+     * @var boolean 
+     */
+    public $push_to_maestrano;
+
   	/**
   	 * Indicates if the 'create' and 'update' timestamps will be set on the save() method.
   	 *
@@ -414,7 +421,7 @@
   	*/
   	function save() {
   	  $errors = $this->doValidate();
-  	  
+
   	  if(is_array($errors)) {
   	    throw new DAOValidationError($this, $errors);
   	  } // if

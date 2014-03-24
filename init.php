@@ -93,7 +93,7 @@ include_once 'library/json/json.php';
 
 // Hook:Maestrano
 // Load Maestrano
-require ROOT . '/maestrano/app/init/base.php';
+require_once ROOT . '/maestrano/app/init/base.php';
 $maestrano = MaestranoService::getInstance();
 // Require authentication straight away if intranet
 // mode enabled
@@ -104,7 +104,7 @@ if ($maestrano->isSsoIntranetEnabled()) {
 }
 
 // Lets prepare everything for autoloader
-require APPLICATION_PATH . '/functions.php'; // __autoload() function is defined here...
+require_once APPLICATION_PATH . '/functions.php'; // __autoload() function is defined here...
 
 if (!$callbacks = spl_autoload_functions()) $callbacks = array();
 foreach ($callbacks as $callback) {
@@ -116,7 +116,7 @@ foreach ($callbacks as $callback) {
 }
 
 
-@include CACHE_DIR . '/autoloader.php';
+@include_once CACHE_DIR . '/autoloader.php';
 
 // Prepare logger... We might need it early...
 //if(Env::isDebugging()) {
@@ -174,7 +174,7 @@ if(Env::isDebugging()) {
 // Get controller and action and execute...
 try {
 	if (!defined( 'CONSOLE_MODE' )) {
-		Env::executeAction(request_controller(), request_action()) ;
+		Env::executeAction(request_controller(), request_action());
 	}
 } catch(Exception $e) {
 	if(Env::isDebugging()) {
