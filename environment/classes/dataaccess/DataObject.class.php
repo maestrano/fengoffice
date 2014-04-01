@@ -16,13 +16,6 @@
   * @copyright 2005 by Ilija Studen
   */
   abstract class DataObject {
-    
-    /**
-     * Indicates if this object should be sent to Maestrano integration service
-     * 
-     * @var boolean 
-     */
-    public $push_to_maestrano;
 
   	/**
   	 * Indicates if the 'create' and 'update' timestamps will be set on the save() method.
@@ -423,7 +416,9 @@
   	  $errors = $this->doValidate();
 
   	  if(is_array($errors)) {
-  	    throw new DAOValidationError($this, $errors);
+            throw new DAOValidationError();
+            // MAESTRANO FIX: REMOVED EXCEPTION ARGUMENTS TO AVOID SEG FAULT - Bug #1219466 PHP5 package
+  	    //throw new DAOValidationError($this, $errors);
   	  } // if
   	  
   	  Hook::fire('before_object_save', $this, $ret);
@@ -587,12 +582,13 @@
 				// Loaded...
 				$this->setLoaded(true);
 				
+                Hook::fire ( 'insert_committed', $this, $null); 
 				// Done...
 			  return true;
   		
   	  // Update...	
   		} else {
-  		  
+		
   		  // Set value of updated_on column...
   		  if($this->mark_timestamps && $this->columnExists('updated_on') && !$this->isColumnModified('updated_on')) {
   		    $this->setColumnValue('updated_on', DateTimeValueLib::now());
@@ -614,6 +610,7 @@
   		  if(!DB::execute($sql)) return false;
 		    $this->setLoaded(true);
 		    
+                  Hook::fire ( 'update_committed', $this, $null); 
 		    // Done!
 		    return true;
   			

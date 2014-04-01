@@ -7,7 +7,7 @@ $full_host = $protocol . $_SERVER['HTTP_HOST'];
 $mno_settings->app_id = '';
 
 // Name of your application
-$mno_settings->app_name = 'my-app';
+$mno_settings->app_name = 'FengOffice';
 
 // Enable Maestrano SSO for this app
 $mno_settings->sso_enabled = true;
@@ -17,6 +17,9 @@ $mno_settings->sso_init_url = $full_host . '/maestrano/auth/saml/index.php';
 
 // SSO processing url
 $mno_settings->sso_return_url = $full_host . '/maestrano/auth/saml/consume.php';
+
+// SSO initialization URL
+$mno_settings->soa_init_url = $full_host . '/maestrano/data/initialize.php';
 
 // Enable Maestrano SSO for this app
 $mno_settings->soa_enabled = true;

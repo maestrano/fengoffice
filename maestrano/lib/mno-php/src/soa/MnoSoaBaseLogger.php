@@ -3,10 +3,13 @@
 /**
  * Mno DB Map Interface
  */
-class MnoSoaBaseLogger {    
-    protected $_app_prefix = "fengoffice";
+class MnoSoaBaseLogger {
+    protected $_app_prefix = "";
     public function __construct()
-    { }
+    { 
+        $maestrano = MaestranoService::getInstance();
+        $this->_app_prefix = $maestrano->getSettings()->app_id;
+    }
     
     public function debug($msg) 
     {

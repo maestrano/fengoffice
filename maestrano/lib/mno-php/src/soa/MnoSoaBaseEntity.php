@@ -49,48 +49,46 @@ class MnoSoaBaseEntity
     * @return MaestranoEntity the maestrano entity json object
     */
     protected function build() {
-	throw new Exception('Function '. __FUNCTION__ . ' must be overriden in Entity class!');
+		throw new Exception('Function '. __FUNCTION__ . ' must be overriden in Entity class!');
     }
     
     protected function persist($mno_entity) {
-	throw new Exception('Function '. __FUNCTION__ . ' must be overriden in Entity class!');
+		throw new Exception('Function '. __FUNCTION__ . ' must be overriden in Entity class!');
     }
     
-    protected function getLocalEntityIdentifier() {
+    public function getLocalEntityIdentifier() {
         throw new Exception('Function '. __FUNCTION__ . ' must be overriden in Entity class!');
     }
         
     public function send($local_entity) {
-	$this->_log->debug(__FUNCTION__ . " start");
+		$this->_log->debug(__FUNCTION__ . " start");
         
-	$this->_local_entity = $local_entity;
-	$message = $this->build();
+		$this->_local_entity = $local_entity;
+		$message = $this->build();
         $mno_had_no_id = empty($this->_id);
-        $this->_log->debug("this->_id=".$this->_id);
         
-        
-	if ($mno_had_no_id) {
+		if ($mno_had_no_id) {
             $this->_log->debug(__FUNCTION__ . " $this->_id = ".$this->_id);
             $response = $this->callMaestrano($this->_create_http_operation, $this->_create_rest_entity_name, $message);
         } else {
             $response = $this->callMaestrano($this->_update_http_operation, $this->_update_rest_entity_name . '/' . $this->_id, $message);
         }
+        
+        if (empty($response)) {
+            return false;
+        }
 	
         $local_entity_id = $this->getLocalEntityIdentifier();
         $local_entity_now_has_id = !empty($local_entity_id);
         
-	$mno_response_id = $response->id;
+		$mno_response_id = $response->id;
         $mno_response_has_id = !empty($mno_response_id);
-        
-        $this->_log->debug("this->_id = " . $this->_id);
-        $this->_log->debug("local_entity_id = " . $local_entity_id);
-        $this->_log->debug("mno_response_id = " . $mno_response_id);
 	
         if ($mno_had_no_id && $local_entity_now_has_id && $mno_response_has_id) {
-	    $this->addIdMapEntry($local_entity_id,$mno_response_id);
-	}
+	    	$this->addIdMapEntry($local_entity_id,$mno_response_id);
+		}
         
-	$this->_log->debug(__FUNCTION__ . " end");
+        return true;
     }
     
     public function receive($mno_entity) {
@@ -98,10 +96,12 @@ class MnoSoaBaseEntity
     }
     
     public function receiveNotification($notification) {
-	$mno_entity = $this->callMaestrano($this->_receive_http_operation, $this->_receive_rest_entity_name . '/' . $notification->id);
-        if (!empty($mno_entity)) {
-            $this->receive($mno_entity);
-        }
+		$mno_entity = $this->callMaestrano($this->_receive_http_operation, $this->_receive_rest_entity_name . '/' . $notification->id);
+
+        if (empty($mno_entity)) { return false; }
+        
+        $this->receive($mno_entity);
+        return true;
     }
     
     public function sendDeleteNotification($local_id) {
@@ -112,36 +112,21 @@ class MnoSoaBaseEntity
             $this->_log->debug(__FUNCTION__ . " corresponding mno_id = " . $mno_id->_id);
             
             if ($this->_enable_delete_notifications) {
-                $this->callMaestrano($this->_delete_http_operation, $this->_delete_rest_entity_name . '/' . $mno_id->_id);
+                $response = $this->callMaestrano($this->_delete_http_operation, $this->_delete_rest_entity_name . '/' . $mno_id->_id);
+                if (empty($response)) { 
+                    return false; 
+                }
             }
             
             $this->deleteIdMapEntry($local_id);
             $this->_log->debug(__FUNCTION__ .  " after deleting ID entry");
         }
+        
+        return true;
     }
     
-    public function getUpdates($timestamp)
-    {
-        $msg = $this->callMaestrano("GET", "updates" . '/' . $timestamp);
-        $this->_log->debug(__FUNCTION__ .  " after maestrano call");
-        if (!empty($msg['organizations'])) {
-            $this->_log->debug(__FUNCTION__ .  " has organizations");
-            foreach ($msg['organizations'] as $organization) {
-                $this->_log->debug(__FUNCTION__ .  " org id = " + $organization->id);
-                $mno_org = new MnoSoaOrganization($this->_db, $this->_log);
-                $wrapper = array("organization" => $organization);
-		$mno_org->receive($wrapper);
-            }
-        }
-        if (!empty($msg['persons'])) {
-            $this->_log->debug(__FUNCTION__ . " has persons");
-            foreach ($msg['persons'] as $person) {
-                $this->_log->debug(__FUNCTION__ . " org id = " + $person->id);
-                $mno_person = new MnoSoaPerson($this->_db, $this->_log);
-                $wrapper = array("person" => $person);
-		$mno_person->receive($wrapper);   
-            }
-        }
+    public function getUpdates($timestamp) {
+        throw new Exception('Function '. __FUNCTION__ . ' must be overriden in Entity class!');
     }
     
     /**
@@ -162,9 +147,10 @@ class MnoSoaBaseEntity
       curl_setopt($curl, CURLOPT_HEADER, false);
       curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
       curl_setopt($curl, CURLOPT_HTTPHEADER, array("Content-type: application/json"));
-      curl_setopt($curl, CURLOPT_TIMEOUT, '1');
+      curl_setopt($curl, CURLOPT_TIMEOUT, '60');
       
       $this->_log->debug(__FUNCTION__ . " before switch");
+      
       switch ($operation) {
 	  case "POST":
 	      curl_setopt($curl, CURLOPT_POST, true);
@@ -188,13 +174,15 @@ class MnoSoaBaseEntity
       $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
       
       $this->_log->debug(__FUNCTION__ . " status = ". $status);
-      curl_close($curl);
       
       if ( $status != 200 ) {
-	    $this->_log->debug(__FUNCTION__ . " Error: call to URL $url failed with status $status, response $response, curl_error " . curl_error($curl) . ", curl_errno " . curl_errno($curl), 0);
+            $this->_log->debug(__FUNCTION__ . " Error: call to URL $url failed with status $status, response $response, curl_error " . curl_error($curl) . ", curl_errno " . curl_errno($curl), 0);
+            curl_close($curl);
             return null;
       }
-      
+
+      curl_close($curl);
+
       $response = json_decode($response, false);
       
       return $response;
@@ -248,17 +236,13 @@ class MnoSoaBaseEntity
     }
     
     protected function isValidIdentifier($id_obj) {
-        $this->_log->debug(__FUNCTION__ . " start ");
-        $result = !empty($id_obj) && (!empty($id_obj->_id) || (array_key_exists('_id',$id_obj) && $id_obj->_id == 0)) && array_key_exists('_deleted_flag',$id_obj) && $id_obj->_deleted_flag == 0;
-        $this->_log->debug(__FUNCTION__ . " end " . $result);
-        return $result;
+        $this->_log->debug(__FUNCTION__ . " in is valid identifier");
+        return !empty($id_obj) && (!empty($id_obj->_id) || (array_key_exists('_id',$id_obj) && $id_obj->_id == 0)) && array_key_exists('_deleted_flag',$id_obj) && $id_obj->_deleted_flag == 0;
     }
     
     protected function isDeletedIdentifier($id_obj) {
-        $this->_log->debug(__FUNCTION__ . " start ");
-        $result = !empty($id_obj) && (!empty($id_obj->_id) || (array_key_exists('_id',$id_obj) && $id_obj->_id == 0)) && array_key_exists('_deleted_flag',$id_obj) && $id_obj->_deleted_flag == 1;
-        $this->_log->debug(__FUNCTION__ . " end " . $result);
-        return $result;
+        $this->_log->debug(__FUNCTION__ . " in is deleted identifier");
+        return !empty($id_obj) && (!empty($id_obj->_id) || (array_key_exists('_id',$id_obj) && $id_obj->_id == 0)) && array_key_exists('_deleted_flag',$id_obj) && $id_obj->_deleted_flag == 1;
     }
 
     /**

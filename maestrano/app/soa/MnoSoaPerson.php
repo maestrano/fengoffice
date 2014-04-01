@@ -8,7 +8,8 @@ class MnoSoaPerson extends MnoSoaBasePerson
     protected $_local_entity_name = "contact";
     
     // DONE
-    protected function pushId() {
+    protected function pushId() 
+    {
         $this->_log->debug(__FUNCTION__ . " start");
 	$id = $this->getLocalEntityIdentifier();
         $this->_log->debug(__FUNCTION__ . " localentityidentifier=".$id);
@@ -16,25 +17,23 @@ class MnoSoaPerson extends MnoSoaBasePerson
 	if (!empty($id)) {
 	    $this->_log->debug(__FUNCTION__ . " this->_local_entity->id = " . $id);
 	    $mno_id = $this->getMnoIdByLocalId($id);
-            
+
 	    if ($this->isValidIdentifier($mno_id)) {
                 $this->_log->debug(__FUNCTION__ . " this->getMnoIdByLocalId(id) = " . json_encode($mno_id));
 		$this->_id = $mno_id->_id;
 	    }
 	}
-        
         $this->_log->debug(__FUNCTION__ . " end");
     }
     
     // DONE
     protected function pullId() {
         $this->_log->debug(__FUNCTION__ . " start " . $this->_id);
-        
-	if (!empty($this->_id)) {            
+	if (!empty($this->_id)) {
 	    $local_id = $this->getLocalIdByMnoId($this->_id);
             $this->_log->debug(__FUNCTION__ . " this->getLocalIdByMnoId(this->_id) = " . json_encode($local_id));
             
-	    if ($this->isValidIdentifer($local_id)) {
+	    if ($this->isValidIdentifier($local_id)) {
                 $this->_log->debug(__FUNCTION__ . " is STATUS_EXISTING_ID");
                 $this->_local_entity = Contacts::findById($local_id->_id);
 		return constant('MnoSoaBaseEntity::STATUS_EXISTING_ID');
@@ -96,9 +95,13 @@ class MnoSoaPerson extends MnoSoaBasePerson
     protected function pushAddresses() {
         $this->_log->debug(__FUNCTION__ . " start ");
         
-        $query = "SELECT * FROM fo_contact_addresses WHERE contact_id = 121";
+        $query = "SELECT * FROM fo_contact_addresses WHERE contact_id = " . $this->getLocalEntityIdentifier();
 	$result = DB::executeAll($query);
         error_log(json_encode($result));
+        
+        if (empty($result)) {
+            return;
+        }
         
         // WORK ADDRESS -> WORK POSTAL ADDRESS
         $work_address = $this->_local_entity->getAddress('work');
@@ -397,15 +400,17 @@ class MnoSoaPerson extends MnoSoaBasePerson
                 $this->_log->debug("after contacts find by id=" . json_encode($local_id));
                 
                 $organization = new MnoSoaOrganization($this->_db, $this->_log);		
-                $organization->send($org_contact);
+                $status = $organization->send($org_contact);
                 $this->_log->debug("after mno soa organization send");
                 
-                $mno_id = $this->getMnoIdByLocalId($local_id);
+				if ($status) {
+	                $mno_id = $this->getMnoIdByLocalId($local_id);
                 
-                if ($this->isValidIdentifer($mno_id)) {
-                    $this->_role->organization->id = $mno_id->_id;
-                    $this->_role->title = $this->push_set_or_delete_value($this->_local_entity->getJobTitle(), "");
-                }
+    	            if ($this->isValidIdentifer($mno_id)) {
+    	                $this->_role->organization->id = $mno_id->_id;
+    	                $this->_role->title = $this->push_set_or_delete_value($this->_local_entity->getJobTitle(), "");
+    	            }
+				}
             }
             
 	} else {
@@ -433,10 +438,11 @@ class MnoSoaPerson extends MnoSoaBasePerson
                 $notification->entity = "organizations";
                 $notification->id = $this->_role->organization->id;
                 $organization = new MnoSoaOrganization($this->_db, $this->_log);		
-                $organization->receiveNotification($notification);
-                $this->_log->debug(__FUNCTION__ . " notification=" . json_encode($notification));
-                $this->_local_entity->setCompanyId($organization->_local_entity->id);
-                $this->_local_entity->setJobTitle($this->pull_set_or_delete_value($this->_role->title, ""));
+                $status = $organization->receiveNotification($notification);
+				if ($status) {
+    	            $this->_local_entity->setCompanyId($organization->_local_entity->id);
+    	            $this->_local_entity->setJobTitle($this->pull_set_or_delete_value($this->_role->title, ""));
+				}
             }
         }
     }
@@ -460,7 +466,7 @@ class MnoSoaPerson extends MnoSoaBasePerson
     }
     
     // DONE
-    protected function getLocalEntityIdentifier() {
+    public function getLocalEntityIdentifier() {
         return $this->_local_entity->getId();
     }
     

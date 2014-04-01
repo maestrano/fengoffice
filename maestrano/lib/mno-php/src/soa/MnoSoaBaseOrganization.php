@@ -129,7 +129,7 @@ class MnoSoaBaseOrganization extends MnoSoaBaseEntity
 	throw new Exception('Function '. __FUNCTION__ . ' must be overriden in MnoOrganization class!');
     }
     
-    protected function getLocalEntityIdentifier() {
+    public function getLocalEntityIdentifier() {
         throw new Exception('Function '. __FUNCTION__ . ' must be overriden in MnoOrganization class!');
     }
     
@@ -183,7 +183,7 @@ class MnoSoaBaseOrganization extends MnoSoaBaseEntity
     }
     
     protected function persist($mno_entity) {
-        $this->_log->debug(__FUNCTION__ . " mno_entity = " . json_encode($mno_entity));
+        $this->_log->debug(__CLASS__ . " " . __FUNCTION__ . " mno_entity = " . json_encode($mno_entity));
         
         if (!empty($mno_entity->organization)) {
             $mno_entity = $mno_entity->organization;
@@ -230,12 +230,9 @@ class MnoSoaBaseOrganization extends MnoSoaBaseEntity
                 $this->pullEntity();
 
                 $this->saveLocalEntity(false, $status);
-                $this->_log->debug(__FUNCTION__ . " after saveLocalEntity");
             }
-            
-            $this->_log->debug(__FUNCTION__ . " before get local entity identifier");
+
             $local_entity_id = $this->getLocalEntityIdentifier();
-            $this->_log->debug(__FUNCTION__ . " this->getLocalEntityIdentifier()=" . $this->getLocalEntityIdentifier());
             $mno_entity_id = $this->_id;
             
             if ($is_new_id && !empty($local_entity_id) && !empty($mno_entity_id)) {
