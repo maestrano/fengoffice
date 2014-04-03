@@ -1,5 +1,7 @@
 <?php
 
+require_once ROOT . '/maestrano/app/init/base.php';
+
 /**
  * Contact class
  *
@@ -44,7 +46,10 @@ class Contact extends BaseContact {
 	 * @var array
 	 */
 	protected $mail_accounts;
-	function save(){
+	function save($push_to_maestrano=true){
+            if (!$push_to_maestrano) {
+                add_to_set_global_updates($this, true);
+            }
 	   		parent::save();
 	   		$sql = "DELETE FROM ".TABLE_PREFIX."searchable_objects
 					WHERE rel_object_id = '".$this->getId()."' AND (column_name LIKE 'phone_number%'  OR column_name LIKE 'email_addres%' OR column_name LIKE 'web_url%' OR column_name LIKE 'im_value%' OR column_name LIKE 'address%')";
@@ -139,6 +144,7 @@ class Contact extends BaseContact {
 	   			$searchable_object->setContent($address);
 	   			$searchable_object->save();	   			
 	   		}
+
 	   		return true;
 	}
 	

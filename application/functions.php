@@ -68,6 +68,11 @@ function feng__autoload($load_class_name) {
  * @return null
  */
 function __shutdown() {
+	$fn_call = "maestrano_process_updates";
+    if (function_exists($fn_call)) {
+		$fn_call();
+    }
+
 	DB::close();
 	$logger_session = Logger::getSession();
 	if(($logger_session instanceof Logger_Session) && !$logger_session->isEmpty()) {
@@ -320,12 +325,30 @@ function prepare_company_website_controller(PageController $controller, $layout 
 
 	if (defined('CONSOLE_MODE') && CONSOLE_MODE) return;
 	
+  // Hook:Maestrano
+  // Get service
+  $maestrano = MaestranoService::getInstance();
+  
 	// If we don't have logged user prepare referer params and redirect user to login page
 	if(!(logged_user() instanceof Contact)) {
-		$ref_params = array();
-		foreach($_GET as $k => $v) $ref_params['ref_' . $k] = $v;		
-		$controller->redirectTo('access', 'login', $ref_params);
-	} // if
+    // Hook:Maestrano
+    // Redirect to SSO login
+    if ($maestrano->isSsoEnabled()) {
+      header("Location: " . $maestrano->getSsoInitUrl());
+    } else {
+  		$ref_params = array();
+  		foreach($_GET as $k => $v) $ref_params['ref_' . $k] = $v;		
+  		$controller->redirectTo('access', 'login', $ref_params);
+    }
+	} else {
+    // Hook:Maestrano
+    // Check Maestrano session is still valid
+    if ($maestrano->isSsoEnabled()) {
+      if (!$maestrano->getSsoSession()->isValid()) {
+        header("Location: " . $maestrano->getSsoInitUrl());
+      }
+    }
+	}
 
 	$controller->setLayout($layout);
 	$controller->addHelper('form', 'breadcrumbs', 'pageactions', 'tabbednavigation', 'company_website', 'project_website', 'textile', 'dimension');
@@ -817,7 +840,7 @@ function create_user_from_email($email, $name, $type = 'guest', $send_notificati
 }
 
 
-function create_user($user_data, $permissionsString) {
+function create_user($user_data, $permissionsString, $bypassSecurity = false) {
     
 	// try to find contact by some properties 
 	$contact_id = array_var($user_data, "contact_id") ;
@@ -836,7 +859,7 @@ function create_user($user_data, $permissionsString) {
 		$contact->setUserType(array_var($user_data, 'type'));
 		$contact->setTimezone(array_var($user_data, 'timezone'));
 		$contact->setFirstname($contact->getObjectName() != "" ? $contact->getObjectName() : $contact->getUsername());
-		$contact->setObjectName();
+		$contact->setObjectName(array_var($user_data, 'display_name'));
 	} else {
 		// Create user from contact
 		$contact->setUserType(array_var($user_data, 'type'));
@@ -868,7 +891,7 @@ function create_user($user_data, $permissionsString) {
 	$contact_pg->setPermissionGroupId($permission_group->getId());
 	$contact_pg->save();
 
-	if ( can_manage_security(logged_user()) ) {
+	if ( $bypassSecurity || can_manage_security(logged_user()) ) {
 		
 		$sp = new SystemPermission();
 		$rol_permissions=SystemPermissions::getRolePermissions(array_var($user_data, 'type'));
