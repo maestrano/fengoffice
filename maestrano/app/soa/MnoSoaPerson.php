@@ -406,7 +406,7 @@ class MnoSoaPerson extends MnoSoaBasePerson
 				if ($status) {
 	                $mno_id = $this->getMnoIdByLocalId($local_id);
                 
-    	            if ($this->isValidIdentifer($mno_id)) {
+    	            if ($this->isValidIdentifier($mno_id)) {
     	                $this->_role->organization->id = $mno_id->_id;
     	                $this->_role->title = $this->push_set_or_delete_value($this->_local_entity->getJobTitle(), "");
     	            }
