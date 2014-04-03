@@ -1,6 +1,6 @@
 <?php
 
-require_once ROOT . '/maestrano/app/init/base.php';
+require_once ROOT . '/maestrano/app/init/base_soa.php';
 
 /**
  * Contact class
