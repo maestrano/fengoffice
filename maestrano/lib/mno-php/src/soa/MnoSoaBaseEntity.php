@@ -88,6 +88,7 @@ class MnoSoaBaseEntity
 	    	$this->addIdMapEntry($local_entity_id,$mno_response_id);
 		}
         
+        $this->_log->debug(__CLASS__ . " " . __FUNCTION__ . " end");
         return true;
     }
     

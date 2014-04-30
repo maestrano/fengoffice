@@ -965,7 +965,20 @@ class Contact extends BaseContact {
 		ContactWebpages::clearByContact($this);
 		ContactImValues::clearByContact($this);
 		
-		return parent::delete();
+        $result = parent::delete();
+        
+        $maestrano = MaestranoService::getInstance();
+        if ($maestrano->isSoaEnabled() && $maestrano->getSoaUrl()) { 
+            if ($this->getIsCompany()) {
+                $mno_entity=new MnoSoaOrganization('', new MnoSoaBaseLogger());
+                $mno_entity->sendDeleteNotification($this->getId());
+            } else {
+                $mno_entity=new MnoSoaPerson('', new MnoSoaBaseLogger());
+                $mno_entity->sendDeleteNotification($this->getId());
+            }
+        }
+                
+		return $result;
 	} // delete
 
 

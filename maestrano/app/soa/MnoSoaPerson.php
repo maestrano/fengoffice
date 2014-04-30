@@ -43,7 +43,7 @@ class MnoSoaPerson extends MnoSoaBasePerson
             } else {
                 $this->_log->debug(__FUNCTION__ . " is STATUS_NEW_ID");
 		$this->_local_entity = new Contact();
-                $this->_local_entity->setIsCompany(true);
+                $this->_local_entity->setIsCompany(false);
                 $this->pullName();
                 $this->_local_entity->save(false);
 		return constant('MnoSoaBaseEntity::STATUS_NEW_ID');
@@ -354,15 +354,27 @@ class MnoSoaPerson extends MnoSoaBasePerson
     // DONE
     protected function pullWebsites() {
         $this->_log->debug(__FUNCTION__ . " start ");
-        error_log("websites=" . $this->pull_set_or_delete_value($this->_website->url) . " " . $this->pull_set_or_delete_value($this->_website->url2));
+        
+        $web1 = $this->pull_set_or_delete_value($this->_website->url);
+        $web1 = !empty($web1) ? cleanUrl($web1, false) : '';
+        
         $w_homepage = $this->_local_entity->getWebpage('work');
         if($w_homepage){
-            $w_homepage->editWebpageURL($this->pull_set_or_delete_value($this->_website->url));
+            $w_homepage->editWebpageURL($web1);
+        } else {
+            $w_homepage = $this->_local_entity->addWebpage($web1, 'work');
         }
+        
+        $web2 = $this->pull_set_or_delete_value($this->_website->url2);
+        $web2 = !empty($web2) ? cleanUrl($web2, false) : '';
+        
         $p_homepage = $this->_local_entity->getWebpage('personal');
         if($p_homepage){
-            $p_homepage->editWebpageURL($this->pull_set_or_delete_value($this->_website->url2));
+            $p_homepage->editWebpageURL($web2);
+        } else {
+            $p_homepage = $this->_local_entity->addWebpage($web2, 'personal');
         }
+        
         $this->_log->debug(__FUNCTION__ . " end ");
     }
     
@@ -405,12 +417,12 @@ class MnoSoaPerson extends MnoSoaBasePerson
                 
 				if ($status) {
 	                $mno_id = $this->getMnoIdByLocalId($local_id);
-                
+
     	            if ($this->isValidIdentifer($mno_id)) {
-    	                $this->_role->organization->id = $mno_id->_id;
-    	                $this->_role->title = $this->push_set_or_delete_value($this->_local_entity->getJobTitle(), "");
-    	            }
-				}
+						$this->_role->organization->id = $mno_id->_id;
+    	                $this->_role->title = $this->push_set_or_delete_value($this->_local_entity->getJobTitle());
+                    }
+                }
             }
             
 	} else {
@@ -440,8 +452,11 @@ class MnoSoaPerson extends MnoSoaBasePerson
                 $organization = new MnoSoaOrganization($this->_db, $this->_log);		
                 $status = $organization->receiveNotification($notification);
 				if ($status) {
-    	            $this->_local_entity->setCompanyId($organization->_local_entity->id);
-    	            $this->_local_entity->setJobTitle($this->pull_set_or_delete_value($this->_role->title, ""));
+					$local_id = $this->getLocalIdByMnoIdName($this->_role->organization->id, "organizations");
+					if ($this->isValidIdentifier($local_id)) {
+						$this->_local_entity->setCompanyId($organization->getLocalEntityIdentifier());
+						$this->_local_entity->setJobTitle($this->pull_set_or_delete_value($this->_role->title));
+					}
 				}
             }
         }
