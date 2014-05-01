@@ -7,7 +7,7 @@ $full_host = $protocol . $_SERVER['HTTP_HOST'];
 $mno_settings->app_id = '';
 
 // Name of your application
-$mno_settings->app_name = 'FengOffice';
+$mno_settings->app_name = 'fengoffice';
 
 // Enable Maestrano SSO for this app
 $mno_settings->sso_enabled = true;

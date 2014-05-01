@@ -21,7 +21,7 @@ function maestrano_update_committed($obj)
 function add_to_set_global_updates($obj, $setToFalse=false) 
 {
     global $global_updates;
-    
+
     if (method_exists($obj, "getObjectId") && method_exists($obj, "getObjectTypeId")) {
         $obj_type_id = $obj->getObjectTypeId();
         $obj_id = $obj->getObjectId();
@@ -65,6 +65,14 @@ function maestrano_process_updates()
             error_log("key = " . $key);
             if ($push_to_maestrano) {
                 $contact = Contacts::findById($key);
+                if (method_exists($contact, "getUserType")) {
+                    // prevent users from being pushed to maestrano
+                    error_log("has get user type");
+                    if ($contact->getUserType() == 1) {
+                        error_log("is a user");
+                        continue;
+                    }
+                }
                 try {
                     if (!empty($contact)) {
                         error_log("contract is not empty");
