@@ -4,7 +4,9 @@ if (!defined('MAESTRANO_ROOT')) {
   define("MAESTRANO_ROOT", realpath(dirname(__FILE__) . '/../../'));
 }
 
-Hook::register("maestrano");
+if (class_exists('Hook')) {
+  Hook::register("maestrano");
+}
 
 function maestrano_insert_committed($obj)
 {

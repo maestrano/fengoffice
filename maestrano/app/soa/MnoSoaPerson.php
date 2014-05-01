@@ -13,7 +13,7 @@ class MnoSoaPerson extends MnoSoaBasePerson
         $this->_log->debug(__FUNCTION__ . " start");
 	$id = $this->getLocalEntityIdentifier();
         $this->_log->debug(__FUNCTION__ . " localentityidentifier=".$id);
-	
+
 	if (!empty($id)) {
 	    $this->_log->debug(__FUNCTION__ . " this->_local_entity->id = " . $id);
 	    $mno_id = $this->getMnoIdByLocalId($id);
