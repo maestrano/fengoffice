@@ -470,12 +470,6 @@ class MnoSoaPerson extends MnoSoaBasePerson
         if ($status == constant('MnoSoaBaseEntity::STATUS_NEW_ID') || $status == constant('MnoSoaBaseEntity::STATUS_EXISTING_ID')) {
             $this->_local_entity->save($push_to_maestrano);
         }
-        if ($status == constant('MnoSoaBaseEntity::STATUS_NEW_ID')) {
-            $object_controller = new ObjectController();
-            $object_controller->add_subscribers($this->_local_entity);
-            $object_controller->link_to_new_object($this->_local_entity);
-            $object_controller->add_custom_properties($this->_local_entity);
-        }
         
         $this->_log->debug(__FUNCTION__ . " end ");
     }
