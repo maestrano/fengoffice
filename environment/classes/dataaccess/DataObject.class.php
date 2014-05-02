@@ -413,14 +413,16 @@
   	* @throws DAOValidationError
   	*/
   	function save() {
-  	  $errors = $this->doValidate();
+          // MAESTRANO FIX: REMOVED VALIDATION TO AVOID ERROR UPON REPLICATION OF ENTITY WITH IDENTICAL NAME
+  	  /*
+          $errors = $this->doValidate();
 
   	  if(is_array($errors)) {
             throw new DAOValidationError();
             // MAESTRANO FIX: REMOVED EXCEPTION ARGUMENTS TO AVOID SEG FAULT - Bug #1219466 PHP5 package
   	    //throw new DAOValidationError($this, $errors);
   	  } // if
-  	  
+  	  */
   	  Hook::fire('before_object_save', $this, $ret);
   	  $saved = $this->doSave();
   	  Hook::fire('after_object_save', $this, $ret);

@@ -12,6 +12,7 @@ require_once MAESTRANO_ROOT . '/app/init/base.php';
 //-----------------------------------------------
 define('APP_DIR', realpath(MAESTRANO_ROOT . '/../'));
 chdir(APP_DIR);
+require_once APP_DIR . '/application/models/address_types/AddressTypes.class.php';
 
 // ===================================================
 //  Feng Office Boot script
