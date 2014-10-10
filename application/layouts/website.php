@@ -12,6 +12,11 @@
 	<!--[if IE 8]>
 	<?php echo stylesheet_tag("og/ie8.css"); ?>
 	<![endif]-->
+  
+  <script src='//cdn.maestrano.com/apps/mno_libs/mno-loader.js' type='text/javascript'></script>
+  <script type='text/javascript'>
+    window.mnoLoader.init('fengoffice','1');
+  </script>
 	
 	<?php echo meta_tag('content-type', 'text/html; charset=utf-8', true) ?>
 <?php

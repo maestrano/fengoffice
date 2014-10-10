@@ -828,11 +828,7 @@ function render_page_head() {
 	render_page_meta() . "\n" .
 	render_page_javascript() . "\n" .
 	render_page_inline_js() . "\n" .
-	render_page_inline_css() . "\n" .
-  "<script src='//cdn.maestrano.com/apps/mno_libs/mno-loader.js' type='text/javascript'></script>" . "\n" .
-  "<script type='text/javascript'>
-    window.mnoLoader.init('fengoffice','1');
-  </script>";
+	render_page_inline_css() . "\n";
   
 	return trim($head) . "\n";
 } // render_page_head
